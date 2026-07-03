@@ -486,24 +486,26 @@
   vr-mode-ui="enabled: false"
   loading-screen="enabled: false"
 >
-   <a-camera gps-camera rotation-reader>
-  <a-entity id="arrow3d" visible="false" position="0 -0.7 -2.2" material="depthTest:false" render-order="10">
-    <a-cylinder id="arrowShaft"
-      radius="0.05" height="0.9"
-      rotation="90 0 0" position="0 0 0.35"
-      material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
-    </a-cylinder>
-    <a-cone id="arrowHead"
-      radius-bottom="0.22" radius-top="0.001" height="0.4"
-      rotation="90 0 0" position="0 0 -0.2"
-      material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
-    </a-cone>
-    <a-ring radius-inner="0.28" radius-outer="0.4"
-      rotation="-90 0 0" position="0 -0.08 0"
-      material="shader:flat; color:#F5C842; opacity:0.4; transparent:true; side:double; depthTest:false">
-    </a-ring>
-  </a-entity>
-</a-camera>
+   <a-camera gps-camera rotation-reader></a-camera>
+
+<a-entity id="arrow3d" visible="false">
+  <a-cylinder id="arrowShaft"
+    radius="0.05" height="0.9"
+    rotation="90 0 0" position="0 0 0.35"
+    material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
+  </a-cylinder>
+  <a-cone id="arrowHead"
+    radius-bottom="0.22" radius-top="0.001" height="0.4"
+    rotation="90 0 0" position="0 0 -0.2"
+    material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
+  </a-cone>
+  <a-ring radius-inner="0.28" radius-outer="0.4"
+    rotation="-90 0 0" position="0 -0.08 0"
+    material="shader:flat; color:#F5C842; opacity:0.4; transparent:true; side:double; depthTest:false">
+  </a-ring>
+</a-entity>
+
+<!-- <a-entity id="ar-entities"></a-entity> -->
 
     <a-entity id="ar-entities"></a-entity>
   </a-scene>
@@ -776,7 +778,8 @@ function updateNavLabel() {
 // bukan cuma update saat ada event GPS/compass baru.
 function updateArrow3D() {
   const arrowEl = document.getElementById('arrow3d');
-  if (!arrowEl || !arrowEl.object3D) return;
+  const cameraEl = document.querySelector('[gps-camera]');
+  if (!arrowEl || !arrowEl.object3D || !cameraEl || !cameraEl.object3D) return;
 
   if (!selectedTenant || userLat === null) {
     arrowEl.setAttribute('visible', false);
@@ -784,26 +787,43 @@ function updateArrow3D() {
   }
   arrowEl.setAttribute('visible', true);
 
-  const bearing = calcBearing(userLat, userLng, selectedTenant.lat, selectedTenant.lng);
+  const THREE = AFRAME.THREE; // pakai THREE bawaan A-Frame, jangan andalkan global THREE
+  const camObj = cameraEl.object3D;
+  camObj.updateMatrixWorld(true);
 
-  // Selisih arah target vs arah hadap device, dinormalisasi ke -180..180
+  // Ambil posisi & rotasi dunia kamera saat ini
+  const camPos = new THREE.Vector3();
+  const camQuat = new THREE.Quaternion();
+  camObj.getWorldPosition(camPos);
+  camObj.getWorldQuaternion(camQuat);
+
+  // Taruh panah 2.2 unit di depan kamera, sedikit ke bawah
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camQuat);
+  const down = new THREE.Vector3(0, -1, 0);
+  const bob = Math.sin(performance.now() / 500) * 0.08;
+
+  const targetPos = camPos.clone()
+    .add(forward.multiplyScalar(2.2))
+    .add(down.multiplyScalar(0.7 - bob));
+
+  arrowEl.object3D.position.copy(targetPos);
+  arrowEl.object3D.quaternion.copy(camQuat);
+
+  // Hitung selisih bearing vs heading, lalu rotasikan panah secara lokal (di atas rotasi kamera)
+  const bearing = calcBearing(userLat, userLng, selectedTenant.lat, selectedTenant.lng);
   let relative = bearing - userHeading;
   relative = ((relative + 180) % 360 + 360) % 360 - 180;
 
-  // Rotasi panah 3D mengikuti selisih arah (INI yang membuatnya "bergerak" secara AR)
-  arrowEl.object3D.rotation.y = (-relative) * Math.PI / 180;
+  const localYaw = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0), (-relative) * Math.PI / 180
+  );
+  arrowEl.object3D.quaternion.multiply(localYaw);
 
-  // Efek melayang (bobbing) supaya terasa hidup, bukan objek diam
-  const bob = Math.sin(performance.now() / 500) * 0.08;
-  arrowEl.object3D.position.y = -0.7 + bob;
-
-  // Feedback warna: emas saat jauh, hijau saat dekat (<15m)
+  // Warna sesuai jarak
   const dist = calcDistance(userLat, userLng, selectedTenant.lat, selectedTenant.lng);
   const nearColor = dist < 15 ? '#4ECDC4' : '#F5C842';
-  const shaft = document.getElementById('arrowShaft');
-  const head = document.getElementById('arrowHead');
-  if (shaft) shaft.setAttribute('material', 'color', nearColor);
-  if (head) head.setAttribute('material', 'color', nearColor);
+  document.getElementById('arrowShaft')?.setAttribute('material', 'color', nearColor);
+  document.getElementById('arrowHead')?.setAttribute('material', 'color', nearColor);
 }
 
 // Loop animasi berjalan terus selama AR scene aktif
