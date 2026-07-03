@@ -10,8 +10,8 @@
 
   <!-- PENTING: build AR.js LOCATION-BASED (bukan -nft, yang itu untuk image marker tracking).
        Build ini yang menyediakan komponen gps-camera & gps-entity-place. -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
+  <!-- <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script> -->
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -478,45 +478,32 @@
 
 <!-- ── AR SCENE ── -->
 <div id="ar-scene">
-  <a-scene
-    id="aScene"
-    embedded
-    arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
-    renderer="logarithmicDepthBuffer: true; antialias: true;"
-    vr-mode-ui="enabled: false"
-    loading-screen="enabled: false"
-  >
-    <a-camera gps-camera rotation-reader>
-      <!--
-        PANAH 3D — ini objek AR sungguhan (bukan HTML/CSS).
-        Diletakkan sebagai child dari <a-camera> supaya selalu "mengambang"
-        di depan pengguna. Rotasi Y-nya di-update tiap frame oleh
-        updateArrow3D() di bagian <script> bawah, berdasarkan selisih
-        bearing (arah ke tenant) vs heading (arah hadap device),
-        sehingga panah benar-benar berputar mengikuti arah nyata.
-
-        CATATAN: jika arah putarnya terbalik/kebalik saat dites di device,
-        cukup ubah tanda minus pada baris:
-          arrowEl.object3D.rotation.y = (-relative) * Math.PI / 180;
-        atau ganti rotation="90 0 0" jadi "-90 0 0" pada shaft/head di bawah.
-      -->
-      <a-entity id="arrow3d" visible="false" position="0 -0.7 -2.2">
-        <a-cylinder id="arrowShaft"
-          radius="0.05" height="0.9"
-          rotation="90 0 0" position="0 0 0.35"
-          material="color:#F5C842; emissive:#F5C842; emissiveIntensity:0.5; metalness:0.2; roughness:0.5">
-        </a-cylinder>
-        <a-cone id="arrowHead"
-          radius-bottom="0.22" radius-top="0.001" height="0.4"
-          rotation="90 0 0" position="0 0 -0.2"
-          material="color:#F5C842; emissive:#F5C842; emissiveIntensity:0.6; metalness:0.2; roughness:0.5">
-        </a-cone>
-        <a-ring radius-inner="0.28" radius-outer="0.4"
-          rotation="-90 0 0" position="0 -0.08 0"
-          color="#F5C842" material="opacity:0.4; transparent:true; side:double">
-        </a-ring>
-      </a-entity>
-    </a-camera>
+<a-scene
+  id="aScene"
+  embedded
+  arjs="sourceType: webcam; debugUIEnabled: false;"
+  renderer="logarithmicDepthBuffer: true; antialias: true; alpha: true;"
+  vr-mode-ui="enabled: false"
+  loading-screen="enabled: false"
+>
+   <a-camera gps-camera rotation-reader>
+  <a-entity id="arrow3d" visible="false" position="0 -0.7 -2.2" material="depthTest:false" render-order="10">
+    <a-cylinder id="arrowShaft"
+      radius="0.05" height="0.9"
+      rotation="90 0 0" position="0 0 0.35"
+      material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
+    </a-cylinder>
+    <a-cone id="arrowHead"
+      radius-bottom="0.22" radius-top="0.001" height="0.4"
+      rotation="90 0 0" position="0 0 -0.2"
+      material="shader:flat; color:#F5C842; opacity:1; depthTest:false">
+    </a-cone>
+    <a-ring radius-inner="0.28" radius-outer="0.4"
+      rotation="-90 0 0" position="0 -0.08 0"
+      material="shader:flat; color:#F5C842; opacity:0.4; transparent:true; side:double; depthTest:false">
+    </a-ring>
+  </a-entity>
+</a-camera>
 
     <a-entity id="ar-entities"></a-entity>
   </a-scene>
@@ -596,7 +583,7 @@ const TENANTS = [
     menu: [{ nama: 'Es Kopi Susu Kutai', harga: 'Rp 18.000' },{ nama: 'Americano Mahakam', harga: 'Rp 15.000' },{ nama: 'Matcha Latte', harga: 'Rp 22.000' }],
     tags: ['Best Seller', 'Outdoor Seat'] },
   { id: 2, emoji: '🍜', name: 'Warung Soto Banjar', cat: 'makanan', catLabel: 'Makanan Berat', jam: '16.00 – 23.00',
-    lat: -0.5025, lng: 117.1535,
+    lat: -0.5487940, lng: 117.1529507,
     menu: [{ nama: 'Soto Banjar Ayam', harga: 'Rp 20.000' },{ nama: 'Nasi + Ikan Bakar', harga: 'Rp 28.000' },{ nama: 'Sop Buntut', harga: 'Rp 35.000' }],
     tags: ['Halal', 'Porsi Besar'] },
   { id: 3, emoji: '🧋', name: 'Boba Lampion', cat: 'minuman', catLabel: 'Minuman Kekinian', jam: '14.00 – 23.30',
